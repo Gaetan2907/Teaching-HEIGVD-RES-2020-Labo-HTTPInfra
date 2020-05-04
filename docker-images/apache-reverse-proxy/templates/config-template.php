@@ -7,22 +7,22 @@
 <VirtualHost *:80> 
 	ServerName demo.res.ch
 	
-	<Proxy "balancer://dynamic>
-		BalancerMember 'http://<?php print "$dynamic_app1"?>/' route=1
-		BalancerMember 'http://<?php print "$dynamic_app2"?>/' route=2
+	<Proxy "balancer://dynamic">
+		BalancerMember 'http://<?php print "$dynamic_app1"?>' route=1
+		BalancerMember 'http://<?php print "$dynamic_app2"?>' route=2
 	</Proxy> 
 	
-	<Proxy "balancer://static> 
-		BalancerMember 'http://<?php print "$static_app1"?>/' route=1
-		BalancerMember 'http://<?php print "$static_app2"?>/' route=2
+	<Proxy "balancer://static"> 
+		BalancerMember 'http://<?php print "$static_app1"?>' route=1
+		BalancerMember 'http://<?php print "$static_app2"?>' route=2
 	</Proxy> 
 	
-	ProxyPass '/api/students/' 'balancer://dynamic'
-	ProxyPassReverse '/api/students/' 'balancer://dynamic'
+	ProxyPass '/api/students/' 'balancer://dynamic/'
+	ProxyPassReverse '/api/students/' 'balancer://dynamic/'
 	
 	
-	ProxyPass '/' 'balancer://static' 
-	ProxyPassReverse '/' 'balancer://static' 
+	ProxyPass '/' 'balancer://static/' 
+	ProxyPassReverse '/' 'balancer://static/' 
 	
 </VirtualHost> 
 
