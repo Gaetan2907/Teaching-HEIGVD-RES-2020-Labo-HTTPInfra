@@ -1,4 +1,10 @@
 #!/bin/bash
+# 
+# This script run all the containers for the RES lab HTTPInfra 
+#
+# Usage : ./init.sh 
+#
+# Author : Gaëtan Daubresse 
 
 cd docker-images/apache-php-image
 docker build -t res/apache_php . 
@@ -10,7 +16,7 @@ cd ../express-image
 docker build -t res/express_locations . 
 
 docker run -d --name express_dynamic1 res/express_locations
-docker run -d --name express_dynamic2 res/express_locations
+docker run -d --name express_dynamic1 res/express_locations
 
 docker run -d --name apache_static1 res/apache_php
 docker run -d --name apache_static2 res/apache_php

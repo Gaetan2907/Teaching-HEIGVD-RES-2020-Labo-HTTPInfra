@@ -140,6 +140,8 @@ Ceci permettra de lancer le script php [config-template.php](./docker-images/apa
 
 Le script config-template.php récupère les variables d’environnements et les insert aux lignes ProxyPass et ProxyPassReverse afin que le routage soit effectué correctement. 
 
+Afin de faciliter les tests et la mise en place de l’infrastrucuture, nous avons réalisé deux scripts. Le premier, [init.sh](init.sh) permet de lancer tous les dockers avec les bons paramètres. Le second [clean.sh](clean.sh) stoppe et supprime tous les conteneurs build et lancé par init.sh. 
+
 ## Additional steps
 
 ### Load balancing: multiple server nodes (0.5pt)
@@ -170,5 +172,35 @@ Pour tester notre configuration nous avons édité le fichier index.html de nos 
 
 <img src="img/LoadBalancer.gif" style="zoom:50%;" />
 
+Une autre méthode pour tester le fonctionnement sans avoir à modifier le fichier HTML consiste a se connecter aux conteneurs des deux serveurs statiques et d’y observer les connections qui se font lorsque nous actualisons la page. Actuellement les conteneus sont en mode `-detach`, nous devons donc nous rattacher au deux conteneurs en entrant dans un terminal la commande suivante : 
 
+`docker attach apache_static1`
 
+et dans un autre la commande : 
+
+`docker attach apache_static2` 
+
+De cette façon nous verrons s’afficher toutes les connections qui sont effectuées sur chacuns des deux serveurs. 
+
+### Load balancing: round-robin vs sticky sessions (0.5 pt)
+
+L’objectif de cette étape consiste à configurer le load balancer sur le reverse proxy pour qu’il gère les sessions avec le serveur dynamique en mode round-robin et en mode sticky avec le serveur statique. 
+
+Pour les sticky sessions le loadbalancer va se baser sur les cookies de l’utilisateur. Certains load-balancer se base sur les adresse ip mais cela peut induire des problèmes. Une distribution de charge inégale si le client se trouve derrière un mandataire ou un problème d’abonnement si le client utilise une adresse IP dynamique qui risquerait de changer au cours d’une session. 
+
+Pour la configuration nous avons utilisé le module header du serveur apache et modifié notre fichier [config-template.php](./docker-images/apache-reverse-proxy/templates/config-template.php)  comme ci-dessous : 
+
+```php
+	Header add Set-Cookie "ROUTEID=.%{BALANCER_WORKED_ROUTE}e; path=/" env=BALANCER_ROUTE_CHANGED
+	<Proxy "balancer://static"> 
+		BalancerMember 'http://<?php print "$static_app1"?>' route=1
+		BalancerMember 'http://<?php print "$static_app2"?>' route=2
+		ProxySet stickysession=ROUTEID
+	</Proxy> 
+```
+
+La ligne “Header add…” indique au serveur apache de générer un cookie pour la page que l’utilisateur à chargée. La ligne “ProxySet..” indique au load-balancer d’utiliser un route définie en fonction du cookie. 
+
+Pour tester notre configuration nous pouvons charger une première fois la page, puis supprimer tous les cookies que le navigateur à généré durant la dernière heure et actualiser ensuite la page. Nous constatons que le serveur aura changer. Par contre si nous ne supprimons pas les cookies et tentons d’actualiser plusieurs fois la page, nous restons sur le même serveur statique. 
+
+Pour vérifier le changement de serveur lors du chargement nous nous connectons aux deux conteneurs comme expliqué dans l’étape précédente. 
