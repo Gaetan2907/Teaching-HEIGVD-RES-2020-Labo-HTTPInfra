@@ -139,3 +139,36 @@ php /var/apache2/templates/config-template.php > /etc/apache2/sites-available/00
 Ceci permettra de lancer le script php [config-template.php](./docker-images/apache-reverse-proxy/templates/config-template.php) qui va générer le fichier de config, nous copions ensuite le résultat au bon endroit dans notre conteneur. 
 
 Le script config-template.php récupère les variables d’environnements et les insert aux lignes ProxyPass et ProxyPassReverse afin que le routage soit effectué correctement. 
+
+## Additional steps
+
+### Load balancing: multiple server nodes (0.5pt)
+
+Dans cette étape nous voulons utiliser un load-balancer afin de répartir la charge entre nos différents serveurs statique et dynamique. Pour ce faire nous avons besoin du module apache proxy_balancer. 
+
+Nous allons d’abord lancer 2 fois l’image statique et dynamique afin d’avoir en tout 4 serveurs sur lesquels seront répartis le traffic. Nous éditons ensuite notre fichier [config-template.php](./docker-images/apache-reverse-proxy/templates/config-template.php) afin que le script génère correctement la configuration du load balancer sur le reverse proxy. 
+
+Nous l’avons modifié afin qu’il ne prenne plus 2 mais 4 adresse IP via les variables d’environnement.  Pour chacun de nos serveurs statique et dynamique nous avons indiqué l’adresse des serveurs sur lesquels répartir la charge. Voici ci-dessous la syntaxe que nous avons utilisé pour le serveur dynamique. 
+
+```php
+	<Proxy "balancer://dynamic">
+		BalancerMember 'http://<?php print "$dynamic_app1"?>' route=1
+		BalancerMember 'http://<?php print "$dynamic_app2"?>' route=2
+	</Proxy> 
+```
+
+Nous indiquons ensuite aux lignes ProxyPass et ProxyReverse non plus directement les adresses des serveurs mais l’adresse du LoadBalancer que nous venons de créer. Il est important de faire **attention aux “/”**, il sont nécessaires en fin de ligne apres les instructions ProxyPass et ProxyPassReverse mais nous n’en mettons pas à la fin de l’attribut du Proxy. 
+
+```php
+ProxyPass '/api/students/' 'balancer://dynamic/'
+ProxyPassReverse '/api/students/' 'balancer://dynamic/'
+```
+
+Il ne faut pas oublier d’également ajouter les modules ProxyBalancer et lbmethod_byrequests au Dockerfile de notre reverse proxy. 
+
+Pour tester notre configuration nous avons édité le fichier index.html de nos 2 serveurs statiques en y écrivant respectivement serveur1 et serveur2. En actualisant plusieurs fois la page de notre navigateur on observe que les requêtes sont partagées entre les deux serveurs. 
+
+<img src="img/LoadBalancer.gif" style="zoom:50%;" />
+
+
+
