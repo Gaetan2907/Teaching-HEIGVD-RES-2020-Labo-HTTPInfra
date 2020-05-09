@@ -204,3 +204,29 @@ La ligne “Header add…” indique au serveur apache de générer un cookie po
 Pour tester notre configuration nous pouvons charger une première fois la page, puis supprimer tous les cookies que le navigateur à généré durant la dernière heure et actualiser ensuite la page. Nous constatons que le serveur aura changer. Par contre si nous ne supprimons pas les cookies et tentons d’actualiser plusieurs fois la page, nous restons sur le même serveur statique. 
 
 Pour vérifier le changement de serveur lors du chargement nous nous connectons aux deux conteneurs comme expliqué dans l’étape précédente. 
+
+### Dynamic cluster management (0.5 pt)
+
+L’objectif de cette consiste à développer une solution pour que les nodes serveur puisse apparaître et disparaître de manière dynamique. Par exemple si un des deux serveurs statiques ou dynmamique crash le client doit toujours pouvoir accéder à la page et lorsqu’on rédémarre le serveur il doit à nouveau être utilisé. 
+
+Pour remplir cet objectif nous avons utilisé le module proxy_hcheck de apache. Il permet d’effectuer un ckeck up dynamique des différents membres présent dans un load balancer. Nous nous sommes inspiré de la documentation présente sur le site d’appache dont voici le [lien](https://httpd.apache.org/docs/2.4/fr/mod/mod_proxy_hcheck.html) . 
+
+Dans un premier temps nous avons ajouté proxy_hcheck au  [Dockerfile](./docker-images/apache-reverse-proxy/Dockerfile) de notre reverse proxy afin qu’il soit chargé correctement lors du build. 
+
+Afin de configurer ce module nous avons comme pour les étapes précédentes éditer notre fichier [config-template.php](./docker-images/apache-reverse-proxy/templates/config-template.php) afin qu’il génère un fichier de configuration correcte pour le reverse proxy lors du build du conteneur. 
+
+Nous avons d’abord ajouté la ligne suivante avant les balises Proxy. 
+
+```php
+ProxyHCExpr gdown {%{REQUEST_STATUS} =~ /^[5]/}
+```
+
+Cela correspond à une expression conditionelle dont la valeur est calculée en fonction des en-têtes de réponse des serveurs membre du load-balancer. L’expression permet de vérifier si le serveur sur lequel une requête à été faite est down ou non. 
+
+Nous avons ensuite apondu après chaque ligne BalanceMember l’expressions suivante 
+
+```php
+hcmethod=TCP hcinterval=5 hcpasses=2 hcfails=3
+```
+
+Cela permet de vérifier sur chaques serveur avec un interval de 5 secondes si le socket est opérationnel. Si le serveur est hors service il faudra 2 check réussi pour qu’il soit réactivé et si à ce moment il échoue 3 test il sera de nouveau mis hors service. 
