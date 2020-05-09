@@ -7,14 +7,16 @@
 <VirtualHost *:80> 
 	ServerName demo.res.ch
 	
+	ProxyHCExpr gdown {%{REQUEST_STATUS} =~ /^[5]/}
+
 	<Proxy "balancer://dynamic">
-		BalancerMember 'http://<?php print "$dynamic_app1"?>' route=1
-		BalancerMember 'http://<?php print "$dynamic_app2"?>' route=2
+		BalancerMember 'http://<?php print "$dynamic_app1"?>' route=1 hcmethod=TCP hcinterval=5 hcpasses=2 hcfails=3
+		BalancerMember 'http://<?php print "$dynamic_app2"?>' route=2 hcmethod=TCP hcinterval=5 hcpasses=2 hcfails=3
 	</Proxy> 
 	Header add Set-Cookie "ROUTEID=.%{BALANCER_WORKER_ROUTE}e; path=/" env=BALANCER_ROUTE_CHANGED
 	<Proxy "balancer://static"> 
-		BalancerMember 'http://<?php print "$static_app1"?>' route=1
-		BalancerMember 'http://<?php print "$static_app2"?>' route=2
+		BalancerMember 'http://<?php print "$static_app1"?>' route=1 hcmethod=TCP hcinterval=5 hcpasses=2 hcfails=3
+		BalancerMember 'http://<?php print "$static_app2"?>' route=2 hcmethod=TCP hcinterval=5 hcpasses=2 hcfails=3
 		ProxySet stickysession=ROUTEID
 	</Proxy> 
 	
