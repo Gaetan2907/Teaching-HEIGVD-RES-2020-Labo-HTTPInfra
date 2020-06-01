@@ -1,6 +1,6 @@
 # RES - Labo HTTP Infra 
 
-Auteur : Gaëtan Daubresse 
+Auteur : Chris Barros, Gaëtan Daubresse 
 
 ## Step 1 : Static HTTP server with apache httpd 
 
@@ -231,7 +231,7 @@ hcmethod=TCP hcinterval=5 hcpasses=2 hcfails=3
 
 Cela permet de vérifier sur chaques serveur, avec un intervalle de 5 secondes, si le socket est opérationnel. Si le serveur est hors-service, il faudra 2 checks réussis pour qu’il soit réactivé. Par la suite, s’il échoue 3 tests, il sera de nouveau mis hors service. 
 
-
+Afin de vérifier le bon fonctionnement du cluster dynamique, nous nous sommes connecté avec la commande `attach` aux serveurs statiques et dynamiques. Nous avons ensuite `kill` un des deux serveurs statiques et dynamiques. En actualisant la page, nous avons pu voir que le cluster a automatiquement redirigé le trafic sur les deux serveurs encore en marche. Nous avons ensuite redémarrer les serveurs, vider nos cookies et réactualiser la page, nous constatons que les serveurs précédemment éteint sont à nouveau utilisé.   
 
 ### Management UI (0.5 pt)
 
