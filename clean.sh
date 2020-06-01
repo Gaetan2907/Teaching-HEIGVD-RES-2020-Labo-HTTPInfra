@@ -7,5 +7,6 @@
 #
 # Author : Gaëtan Daubresse 
 
-docker kill express_dynamic1 express_dynamic2 apache_static1 apache_static2 apache_rp 
-docker rm express_dynamic1 express_dynamic2 apache_static1 apache_static2 apache_rp
+docker kill express_dynamic1 express_dynamic2 apache_static1 apache_static2 apache_rp portainer 
+docker rm express_dynamic1 express_dynamic2 apache_static1 apache_static2 apache_rp portainer 
+docker volume rm portainer_data
